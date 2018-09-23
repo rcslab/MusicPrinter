@@ -1,0 +1,29 @@
+
+Distributed Music Printer
+=========================
+
+The distributed music printer consists of several components.
+
+1. 'lpr-music' is a command line tool that accepts music through standard input 
+and plays the music on local speaker instances.
+
+2. 'speakerd' is the distributed speaker system that runs on each device that 
+will play music.  Each instance continuously synchronizes the clock against all 
+other instances.  The lpr-music command sends each instance of speakerd the 
+song to play then requests playback.
+
+3. To implement a shared playlist we will connect lpr-music to the UNIX print 
+spooler lpr.  Using the standard commands lpr, lpq, and lprm we can manage a 
+shared playlist among all users.
+
+Getting Started
+===============
+
+Build the software with the 'scons' command.
+
+% scons
+
+You can clean the build with:
+
+% scons -c
+
