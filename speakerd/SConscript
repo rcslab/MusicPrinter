@@ -1,0 +1,5 @@
+
+Import('env')
+
+env.Program("speakerd", ["main.cc", "timesync.cc", "speaker.cc"])
+
