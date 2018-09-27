@@ -24,8 +24,15 @@
 
 #include <unistd.h>
 #include <sys/time.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+
+#include <netinet/in.h>
+#include <netinet/tcp.h>
 
 #include "timesync.h"
+
+using namespace std;
 
 #define TIMESYNC_PORT 8086
 
@@ -43,20 +50,22 @@ machineTime()
     return tp.tv_sec * 1000000 + tp.tv_usec;
 }
 
-TimeSync::TimeSync()
+TimeSync::TimeSync() : done(false), thrAnnounce(nullptr), thrSync(nullptr)
 {
 }
 
 TimeSync::~TimeSync()
 {
+    if (!done)
+        stop();
 }
 
 void
 TimeSync::start()
 {
     done = false;
-    thrAnnounce = std::thread(&TimeSync::announcer, this);
-    thrSync = std::thread(&TimeSync::listener, this);
+    thrAnnounce = new thread(&TimeSync::announcer, this);
+    thrSync = new thread(&TimeSync::listener, this);
 }
 
 void
@@ -64,17 +73,54 @@ TimeSync::stop()
 {
     done = true;
 
-    thrAnnounce.join();
-    thrSync.join();
+    thrAnnounce->join();
+    delete thrAnnounce;
+    thrAnnounce = nullptr;
+
+    thrSync->join();
+    delete thrSync;
+    thrSync = nullptr;
 }
 
 void
 TimeSync::announcer()
 {
-    TimeSyncPkt pkt;
+    int fd;
+    int status;
+    int broadcast = 1;
+    struct sockaddr_in dstAddr;
+
+    fd = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+    if (fd < 0) {
+        perror("socket");
+        abort();
+    }
+
+    status = setsockopt(fd, SOL_SOCKET, SO_BROADCAST,
+                          &broadcast, sizeof(broadcast));
+    if (status < 0) {
+        perror("setsockopt");
+        abort();
+    }
+
+    memset(&dstAddr, 0, sizeof(dstAddr));
+    dstAddr.sin_family = AF_INET;
+    dstAddr.sin_addr.s_addr = htonl(INADDR_BROADCAST);
+    dstAddr.sin_port = htons(TIMESYNC_PORT);
 
     while (!done) {
+        TimeSyncPkt pkt;
+
+        pkt.magic = TIMESYNC_MAGIC;
         pkt.ts = machineTime();
+
+        status = (int)sendto(fd, (char *)&pkt, sizeof(pkt), 0,
+                        (struct sockaddr *)&dstAddr, sizeof(dstAddr));
+        if (status < 0) {
+            perror("sendto");
+        }
+
+        printf("Announcement Sent");
 
         sleep(1);
     }
@@ -83,8 +129,57 @@ TimeSync::announcer()
 void
 TimeSync::listener()
 {
+    int fd;
+    int status;
+    struct sockaddr_in addr;
+    int reuseaddr = 1;
+
+    fd = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+    if (fd < 0) {
+        perror("socket");
+        abort();
+    }
+
+    status = setsockopt(fd, SOL_SOCKET, SO_REUSEADDR,
+                        &reuseaddr, sizeof(reuseaddr));
+    if (status < 0) {
+        perror("setsockopt");
+        abort();
+    }
+
+    status = setsockopt(fd, SOL_SOCKET, SO_REUSEPORT,
+                        &reuseaddr, sizeof(reuseaddr));
+    if (status < 0) {
+        perror("setsockopt");
+        abort();
+    }
+
+    memset(&addr, 0, sizeof(addr));
+    addr.sin_family = AF_INET;
+    addr.sin_addr.s_addr = htonl(INADDR_ANY);
+    addr.sin_port = htons(TIMESYNC_PORT);
+
+    status = ::bind(fd, (struct sockaddr *)&addr, sizeof(addr));
+    if (status < 0) {
+        perror("bind");
+        abort();
+    }
+
     while (!done) {
-        sleep(1);
+        char buf[1500];
+        ssize_t bufLen = 1500;
+        struct sockaddr_in srcAddr;
+        socklen_t srcAddrLen = sizeof(srcAddr);
+
+        bufLen = recvfrom(fd, buf, (size_t)bufLen, 0,
+                       (struct sockaddr *)&srcAddr, &srcAddrLen);
+        if (bufLen < 0) {
+            perror("recvfrom");
+            continue;
+        }
+
+        printf("Received");
+        // Parse Announcement
     }
 }
 

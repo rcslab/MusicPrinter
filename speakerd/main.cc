@@ -1,15 +1,20 @@
 
+#include <unistd.h>
+
 #include "timesync.h"
 
-TimeSync sync = TimeSync();
+TimeSync *ts;
 
 int
 main(int argc, const char *argv[])
 {
     printf("Starting speakerd ...\n");
 
-    sync.start();
+    ts = new TimeSync();
+    ts->start();
 
-    // XXX: Wait on signal to exit
+    sleep(10);
+
+    ts->stop();
 }
 
