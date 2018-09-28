@@ -3,3 +3,4 @@ Local.sc
 .sconsign.dblite
 .sconf_temp
 config.log
+.*.swp

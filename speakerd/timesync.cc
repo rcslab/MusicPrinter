@@ -1,4 +1,3 @@
-
 /*
  * Simplified Time Synchronization Algorithm
  *
@@ -27,6 +26,7 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 
+#include <arpa/inet.h>
 #include <netinet/in.h>
 #include <netinet/tcp.h>
 
@@ -172,7 +172,7 @@ TimeSync::announcer()
             perror("sendto");
         }
 
-        printf("Announcement Sent");
+        printf("Announcement Sent\n");
 
         sleep(1);
     }
@@ -190,6 +190,7 @@ TimeSync::listener()
     int status;
     struct sockaddr_in addr;
     int reuseaddr = 1;
+    int broadcast = 1;
 
     fd = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
     if (fd < 0) {
@@ -211,6 +212,13 @@ TimeSync::listener()
         abort();
     }
 
+    status = setsockopt(fd, SOL_SOCKET, SO_BROADCAST,
+                          &broadcast, sizeof(broadcast));
+    if (status < 0) {
+        perror("setsockopt");
+        abort();
+    }
+
     memset(&addr, 0, sizeof(addr));
     addr.sin_family = AF_INET;
     addr.sin_addr.s_addr = htonl(INADDR_ANY);
@@ -227,6 +235,7 @@ TimeSync::listener()
         ssize_t bufLen = sizeof(pkt);
         struct sockaddr_in srcAddr;
         socklen_t srcAddrLen = sizeof(srcAddr);
+        char srcAddrStr[INET_ADDRSTRLEN];
 
         bufLen = recvfrom(fd, (void *)&pkt, (size_t)bufLen, 0,
                        (struct sockaddr *)&srcAddr, &srcAddrLen);
@@ -235,12 +244,13 @@ TimeSync::listener()
             continue;
         }
         if (bufLen != sizeof(pkt)) {
-            perror("Packet recieved with the wrong size!");
+            printf("Packet recieved with the wrong size!\n");
             continue;
         }
 
-	// Parse Announcement
-        printf("Received");
+        // Parse Announcement
+        inet_ntop(AF_INET, &srcAddr.sin_addr, srcAddrStr, INET_ADDRSTRLEN);
+        printf("Received from %s\n", srcAddrStr);
         processPkt(pkt);
     }
 }
