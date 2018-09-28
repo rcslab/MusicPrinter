@@ -31,3 +31,11 @@ You can clean the build with:
 
 % scons -c
 
+Printer Setup
+=============
+
+See printcap(5), lpd(8) for setup and lpr(1)/lpq(1),lprm(1) for usage.
+
+We need to create a new printer on the machine and point it to our lpr-music 
+program.  See the fields lp, sd, if, af, lf, and sh in the printcap file.
+
