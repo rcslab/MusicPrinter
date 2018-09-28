@@ -14,6 +14,7 @@ main(int argc, const char *argv[])
     ts->start();
 
     while (1) {
+	printf("GET TIME MUTHAFUCKAS : %lu \n", ts->getTime());
         sleep(1);
     }
 
