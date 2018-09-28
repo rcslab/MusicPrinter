@@ -1,10 +1,12 @@
 
 #include <iostream>
+#include <netinet/in.h>
 
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/socket.h>
 /*
  * XXX: ChangeMe when recompiling on other platforms
  * BSD OSS is in sys/soundcard.h
@@ -187,4 +189,116 @@ main(int argc, const char *argv[])
     close(ossfd);
 }
 */
+
+#define BUF_LEN (10 * 1024 * 1024)
+char buf[BUF_LEN];
+
+int
+main(int argc, const char *argv[])
+{
+    int fd;
+    int sock;
+    int status;
+    struct stat sb;
+    int reuseaddr = 1;
+
+    if (argc != 1) {
+        printf("Usage: %s \n", argv[0]);
+        return 1;
+    }
+
+
+    sock = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP);
+    if (sock <0) {
+	perror("socket");
+	return 1;
+    }
+    
+    status = setsockopt(sock, SOL_SOCKET, SO_REUSEADDR,
+                        &reuseaddr, sizeof(reuseaddr));
+    if (status < 0) {
+        perror("setsockopt");
+        abort();
+    }
+    
+    status = setsockopt(sock, SOL_SOCKET, SO_REUSEPORT,
+                        &reuseaddr, sizeof(reuseaddr));
+    if (status < 0) {
+        perror("setsockopt");
+        abort();
+    }
+
+    struct sockaddr_in server_addr = {0};
+    server_addr.sin_family = AF_INET;
+    server_addr.sin_addr.s_addr = htonl(INADDR_ANY);
+#define PORT (8085)
+    server_addr.sin_port = htons(PORT);
+
+    status = ::bind(sock, (struct sockaddr *) &server_addr, sizeof(server_addr));
+    if (status <0) {
+	perror("bind");
+	return 1;
+    }
+
+#define BACKLOG_LEN (40)
+    status = listen(sock, BACKLOG_LEN);
+    if (status <0) {
+	perror("listen");
+	return 1;
+    }
+
+    printf("Listening to port...\n");
+    struct sockaddr_in newconn;
+    int client;
+    socklen_t newconnlen;
+    for (;;) {
+	newconnlen = sizeof(newconn);
+	client = accept(sock, (struct sockaddr *) &newconn, &newconnlen);
+	if (status <0) {
+		perror("accept");
+		continue;
+	}
+	printf("Accepted connection.\n");
+
+	int cmd;
+	status = read(client, &cmd, sizeof(int));
+	if (status < 0) {
+		perror("recv");
+		return 1;
+	}
+
+	int msglen;
+	status = read(client, &msglen, sizeof(int));
+	if (status < 0) {
+		perror("recv");
+		return 1;
+	}
+
+	printf("Read cmd %d, msglen %d\n", cmd, msglen);
+
+	int offset = 0;
+	while (offset < msglen) {
+		status = read(client, buf + offset, msglen - offset);
+		if (status < 0) {
+			perror("read");
+			return 1;
+		}
+		offset += status;
+	}
+	printf("Offset is: %d\n", offset);
+
+	printf("Read data. Status %d\n", status);
+	if (offset != msglen) {
+		printf("We didn't read enough bytes!\n");
+		return 1;
+	}
+
+       int ossfd = OpenAndConfigureOSS();
+    	DecodeAndPlay(buf, msglen, ossfd);
+    	close(ossfd);
+
+    	printf("DecodeAndPlay: len %d\n", msglen);
+    }
+
+}
 
