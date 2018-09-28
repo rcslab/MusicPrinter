@@ -16,7 +16,7 @@ main(int argc, const char *argv[])
     ts->start();
 
     while (1) {
-	ts->sleepUntil(1 * SECOND);
+	ts->sleepUntil(2 * SECOND + ts->getTime());
 	printf("WAKE UP DAMN U");
 
     }

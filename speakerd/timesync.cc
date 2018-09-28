@@ -164,7 +164,7 @@ TimeSync::getTime()
 void
 TimeSync::sleepUntil(int64_t ts)
 {
-    auto time = getTime() + ts;
+    auto time = ts - getTime();
     if(time < 0)
 	return;
     usleep(time);
