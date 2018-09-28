@@ -83,7 +83,7 @@ void
 TSMachine::addSample(int64_t localts, int64_t remotets)
 {
     lastSeen = machineTime();
-    ts.push_front(localts - remotets);
+    ts.push_front((localts - remotets) / 2);
     if (ts.size() > 120) {
         ts.pop_back();
     }
