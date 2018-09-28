@@ -19,6 +19,10 @@ shared playlist among all users.
 Getting Started
 ===============
 
+Install dependencies
+
+ - FDK-AAC: AAC Decoder/Encoder
+
 Build the software with the 'scons' command.
 
 % scons
