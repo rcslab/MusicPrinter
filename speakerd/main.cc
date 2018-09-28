@@ -1,10 +1,12 @@
 
+#include <stdio.h>
 #include <unistd.h>
 
 #include "timesync.h"
 
 TimeSync *ts;
 
+#define SECOND 1000000
 int
 main(int argc, const char *argv[])
 {
@@ -14,8 +16,9 @@ main(int argc, const char *argv[])
     ts->start();
 
     while (1) {
-	printf("GET TIME MUTHAFUCKAS : %lu \n", ts->getTime());
-        sleep(1);
+	ts->sleepUntil(1 * SECOND);
+	printf("WAKE UP DAMN U");
+
     }
 
     ts->stop();
