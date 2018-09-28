@@ -12,27 +12,31 @@ struct TSPktMachine
     int64_t td;     // Minimum Time Delta
 };
 
-#define TIMESYNC_MAGIC  0x1435089464683975
+#define TIMESYNC_MAGIC      0x1435089464683975
+#define TIMESYNC_MACHINES   32
 
 struct TSPkt
 {
     uint64_t magic; // Magic
     //uint32_t ip;    // IP Address
     int64_t ts;     // Machine Time
-    TSPktMachine machines[32];
+    TSPktMachine machines[TIMESYNC_MACHINES];
 };
 
 class TSMachine
 {
 public:
+    TSMachine() {}
+    TSMachine(const TSMachine &t) = default;
     TSMachine(uint32_t ip);
     ~TSMachine();
+    void dump();
     void addSample(int64_t localts, int64_t remotets);
     uint32_t getIP();
     int64_t getTSDelta();
+    int64_t tdpeer; // Minimum Time Delta from Peer
 private:
     uint32_t ip;
-    //int64_t tdpeer; // Minimum Time Delta from Peer
     std::list<int64_t> ts; // Time Deltas
 };
 
@@ -46,10 +50,12 @@ public:
     int64_t getTime();
     void sleepUntil(int64_t ts);
 private:
+    void dump();
     void announcer();
-    void processPkt(const TSPkt &pkt);
+    void processPkt(uint32_t src, const TSPkt &pkt);
     void listener();
     bool done;
+    uint32_t myIP;
     std::thread *thrAnnounce;
     std::thread *thrSync;
     std::unordered_map<uint32_t,TSMachine> machines;

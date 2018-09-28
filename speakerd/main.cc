@@ -13,7 +13,9 @@ main(int argc, const char *argv[])
     ts = new TimeSync();
     ts->start();
 
-    sleep(10);
+    while (1) {
+        sleep(1);
+    }
 
     ts->stop();
 }
