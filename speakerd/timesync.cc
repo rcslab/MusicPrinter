@@ -158,6 +158,7 @@ TimeSync::getTime()
 	    min_machine = m.second;
 	}
     }
+
     return machineTime() - min_machine.getTSDelta();
 }
 
@@ -165,9 +166,9 @@ void
 TimeSync::sleepUntil(int64_t ts)
 {
     auto time = ts - getTime();
-    if(time < 0)
-	return;
-    usleep(time);
+    if(time > 0) {
+    	usleep(time);
+    }
 }
 
 void
@@ -237,8 +238,8 @@ TimeSync::announcer()
             perror("sendto");
         }
 
-        cout << "Announcement Sent" << endl;
-        dump();
+        //cout << "Announcement Sent" << endl;
+        //dump();
 
         sleep(1);
     }
@@ -311,6 +312,7 @@ TimeSync::listener()
     }
 
     memset(&addr, 0, sizeof(addr));
+
     addr.sin_family = AF_INET;
     addr.sin_addr.s_addr = htonl(INADDR_ANY);
     addr.sin_port = htons(TIMESYNC_PORT);
@@ -337,14 +339,14 @@ TimeSync::listener()
             continue;
         }
         if (bufLen != sizeof(pkt)) {
-            cout << "Packet recieved with the wrong size!" << endl;
+            cout << "Packet with the wrong size!" << endl;
             continue;
         }
 
         // Parse Announcement
         processPkt(srcAddr.sin_addr.s_addr, pkt);
         inet_ntop(AF_INET, &srcAddr.sin_addr, srcAddrStr, INET_ADDRSTRLEN);
-        printf("Received from %s\n", srcAddrStr);
+        //printf("Received from %s\n", srcAddrStr);
     }
 }
 

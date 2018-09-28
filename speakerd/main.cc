@@ -14,11 +14,13 @@ main(int argc, const char *argv[])
 
     ts = new TimeSync();
     ts->start();
-
+    printf("PRE SLEEP\n");
+    sleep(5);
+    printf("POST SLEEP\n");
     while (1) {
-	ts->sleepUntil(2 * SECOND + ts->getTime());
-	printf("WAKE UP DAMN U");
-
+	//ts->sleepUntil(2 * SECOND + ts->getTime());
+        usleep(100 * 1000);
+        printf("%ld\n", ts->getTime());
     }
 
     ts->stop();
