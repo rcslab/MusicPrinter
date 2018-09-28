@@ -21,6 +21,8 @@
  *
  */
 
+#include <iostream>
+
 #include <unistd.h>
 #include <sys/time.h>
 #include <sys/types.h>
@@ -73,8 +75,8 @@ TSMachine::dump()
 
     inet_ntop(AF_INET, &ip, ipStr, INET_ADDRSTRLEN);
 
-    printf("Machine %s\n", ipStr);
-    printf("    TD %lld RemoteTD %lld\n", getTSDelta(), tdpeer);
+    cout << "Machine " << ipStr << endl;
+    cout << "    TD " << getTSDelta() << " RemoteTD " << tdpeer << endl;
 }
 
 void
@@ -162,6 +164,9 @@ TimeSync::announcer()
     int fd;
     int status;
     int broadcast = 1;
+    socklen_t srcAddrLen;
+    struct sockaddr_in srcAddr;
+    char srcStr[INET_ADDRSTRLEN];
     struct sockaddr_in dstAddr;
 
     fd = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
@@ -182,6 +187,19 @@ TimeSync::announcer()
     inet_pton(AF_INET, bcIP, &dstAddr.sin_addr.s_addr);
     dstAddr.sin_port = htons(TIMESYNC_PORT);
 
+    // Figure out our IP
+    status = ::connect(fd, (struct sockaddr *)&dstAddr, sizeof(dstAddr));
+    if (status < 0) {
+        perror("connect");
+        abort();
+    }
+
+    srcAddrLen = sizeof(srcAddr);
+    getsockname(fd, (struct sockaddr *)&srcAddr, &srcAddrLen);
+    inet_ntop(AF_INET, &srcAddr.sin_addr.s_addr, srcStr, sizeof(srcStr));
+    cout << "Local IP: " << srcStr << endl;
+    myIP = srcAddr.sin_addr.s_addr;
+
     while (!done) {
         int i = 0;
         TSPkt pkt;
@@ -194,13 +212,12 @@ TimeSync::announcer()
             i++;
         }
 
-        status = (int)sendto(fd, (char *)&pkt, sizeof(pkt), 0,
-                        (struct sockaddr *)&dstAddr, sizeof(dstAddr));
+        status = (int)send(fd, (char *)&pkt, sizeof(pkt), 0);
         if (status < 0) {
             perror("sendto");
         }
 
-        printf("Announcement Sent\n");
+        cout << "Announcement Sent" << endl;
         dump();
 
         sleep(1);
@@ -213,7 +230,7 @@ TimeSync::processPkt(uint32_t src, const TSPkt &pkt)
     int64_t ts = machineTime();
 
     if (pkt.magic != TIMESYNC_MAGIC) {
-        printf("Received a corrupted timesync packet!");
+        cout << "Received a corrupted timesync packet!" << endl;
         return;
     }
 
@@ -300,7 +317,7 @@ TimeSync::listener()
             continue;
         }
         if (bufLen != sizeof(pkt)) {
-            printf("Packet recieved with the wrong size!\n");
+            cout << "Packet recieved with the wrong size!" << endl;
             continue;
         }
 
