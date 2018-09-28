@@ -50,6 +50,41 @@ machineTime()
     return tp.tv_sec * 1000000 + tp.tv_usec;
 }
 
+TSMachine::TSMachine(uint32_t ip) : ip(ip), ts()
+{
+}
+
+TSMachine::~TSMachine()
+{
+}
+
+void
+TSMachine::addSample(int64_t localts, int64_t remotets)
+{
+    ts.push_front(abs(localts - remotets));
+    if (ts.size() > 120) {
+        ts.pop_back();
+    }
+}
+
+uint32_t
+TSMachine::getIP()
+{
+    return ip;
+}
+
+int64_t
+TSMachine::getTSDelta()
+{
+    int64_t min = INT64_MAX;
+    for (auto &&s : ts) {
+        if (min > s) {
+            min = s;
+        }
+    }
+    return min;
+}
+
 TimeSync::TimeSync() : done(false), thrAnnounce(nullptr), thrSync(nullptr)
 {
 }
@@ -82,6 +117,17 @@ TimeSync::stop()
     thrSync = nullptr;
 }
 
+int64_t
+TimeSync::getTime()
+{
+    return 0;
+}
+
+void
+TimeSync::sleepUntil(int64_t ts)
+{
+}
+
 void
 TimeSync::announcer()
 {
@@ -109,10 +155,16 @@ TimeSync::announcer()
     dstAddr.sin_port = htons(TIMESYNC_PORT);
 
     while (!done) {
-        TimeSyncPkt pkt;
+        int i = 0;
+        TSPkt pkt;
 
         pkt.magic = TIMESYNC_MAGIC;
         pkt.ts = machineTime();
+        for (auto &&m : machines) {
+            pkt.machines[i].ip = m.first;
+            pkt.machines[i].td = m.second.getTSDelta();
+            i++;
+        }
 
         status = (int)sendto(fd, (char *)&pkt, sizeof(pkt), 0,
                         (struct sockaddr *)&dstAddr, sizeof(dstAddr));
@@ -124,6 +176,11 @@ TimeSync::announcer()
 
         sleep(1);
     }
+}
+
+void
+TimeSync::processPkt(const TSPkt &pkt)
+{
 }
 
 void
@@ -166,20 +223,25 @@ TimeSync::listener()
     }
 
     while (!done) {
-        char buf[1500];
-        ssize_t bufLen = 1500;
+        TSPkt pkt;
+        ssize_t bufLen = sizeof(pkt);
         struct sockaddr_in srcAddr;
         socklen_t srcAddrLen = sizeof(srcAddr);
 
-        bufLen = recvfrom(fd, buf, (size_t)bufLen, 0,
+        bufLen = recvfrom(fd, (void *)&pkt, (size_t)bufLen, 0,
                        (struct sockaddr *)&srcAddr, &srcAddrLen);
         if (bufLen < 0) {
             perror("recvfrom");
             continue;
         }
+        if (bufLen != sizeof(pkt)) {
+            perror("Packet recieved with the wrong size!");
+            continue;
+        }
 
+	// Parse Announcement
         printf("Received");
-        // Parse Announcement
+        processPkt(pkt);
     }
 }
 
