@@ -1,11 +1,12 @@
 
 #include <iostream>
-
+#include <fcntl.h>
+#include <string>
 #include <unistd.h>
 #include <sys/time.h>
 #include <sys/types.h>
 #include <sys/socket.h>
-
+#include <sys/stat.h>
 #include <arpa/inet.h>
 #include <netinet/in.h>
 #include <netinet/tcp.h>
@@ -109,11 +110,59 @@ Discover_Speaker()
 int
 main(int argc, const char *argv[])
 {
+
+	int fd;
+	int status;
+	struct stat sb;
+
+	if (argc != 2){
+		printf("Missing arguments");
+		return 1;
+	}
+
+	if (lstat(argv[1],&sb) < 0){
+		perror("lstat error");
+		return 1;
+	}
+
+	int len = sb.st_size;
+	char *buffer = new char[len];
+	
+	fd = open(argv[1], O_RDONLY);
+	if (fd < 0){
+		perror("read error");
+		return 1;
+	}
+
+	int ttlfilesize = len * sizeof(char);
+
+	int ttlbytesread = 0;
+
+	do{
+		int charstoread = ttlfilesize - ttlbytesread;
+		
+		status = read(fd, buffer+ttlbytesread, charstoread);
+		if (status == 0){
+			printf("EoF reached");
+		}
+		if (status < 0){
+			perror("read error");
+			continue;
+		}
+
+		ttlbytesread += status;
+
+		
+	}while (ttlbytesread < ttlfilesize);
+	
+	cout<<"file buffered "<<ttlbytesread<<endl;	
+
     int speakers[TIMESYNC_MACHINES];
+/*
     TSPkt pkt;
 
     pkt = Discover_Speaker();
-
+cout<<"discovered."<<endl;
     // Read stdin and forward to all speakers
     for (int i = 0; i < TIMESYNC_MACHINES; i++) {
         int status;
@@ -141,7 +190,45 @@ main(int argc, const char *argv[])
             speakers[i] = -1;
         }
     }
+cout<<"all connected"<<endl;
+*/
+
+	struct sockaddr_in addr;
+	memset(&addr, 0, sizeof(addr));
+	addr.sin_family = AF_INET;
+	inet_pton(AF_INET, "129.97.75.37", &addr.sin_addr);
+	addr.sin_port = htons(MUSICPRINTER_PORT);
+
+	for (int i = 0; i < TIMESYNC_MACHINES; i++){
+		speakers[i] = -1;
+	}
+
+	speakers[0] = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+
+	status = connect(speakers[0], (struct sockaddr *)&addr, sizeof(addr));
+	if (status < 0) {
+		perror("connect");
+		abort();
+	}
+
+	for (int i = 0; i < TIMESYNC_MACHINES; i++){
+		int cmd = 1;
+		int arg = ttlfilesize;
+
+		cout<<"syncing.."<<endl;
+		if (speakers[i] < 0){
+			continue;
+		}
+
+		write(speakers[i], (char *)&cmd, sizeof(int));
+		write(speakers[i], &arg, sizeof(int));
 
 
+		cout<<sizeof(buffer)<<endl;
+		write(speakers[i], buffer, arg); // or use ttlfilesize instead
+
+	}
+
+	printf("reached the end of the code");
 }
 
