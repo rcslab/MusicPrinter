@@ -158,7 +158,6 @@ main(int argc, const char *argv[])
 	cout<<"file buffered "<<ttlbytesread<<endl;	
 
     int speakers[TIMESYNC_MACHINES];
-/*
     TSPkt pkt;
 
     pkt = Discover_Speaker();
@@ -191,8 +190,8 @@ cout<<"discovered."<<endl;
         }
     }
 cout<<"all connected"<<endl;
-*/
 
+    /*
 	struct sockaddr_in addr;
 	memset(&addr, 0, sizeof(addr));
 	addr.sin_family = AF_INET;
@@ -209,7 +208,7 @@ cout<<"all connected"<<endl;
 	if (status < 0) {
 		perror("connect");
 		abort();
-	}
+	}*/
 
 	// Send everyone the song
 	for (int i = 0; i < TIMESYNC_MACHINES; i++){
