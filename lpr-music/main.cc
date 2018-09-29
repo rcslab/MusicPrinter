@@ -299,6 +299,8 @@ cout<<"all connected"<<endl;
 		close(speakers[i]);
 	}
 
+	printf("Starting @ %ld\n", ts);
+
 	cout << "Done." << endl;
 }
 
