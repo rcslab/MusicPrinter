@@ -15,9 +15,6 @@ main(int argc, const char *argv[])
 
     ts = new TimeSync();
     ts->start();
-    printf("PRE SLEEP\n");
-    sleep(5);
-    printf("POST SLEEP\n");
 
     listen_to_commands(); 
 
