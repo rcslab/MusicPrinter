@@ -83,7 +83,7 @@ void
 TSMachine::addSample(int64_t localts, int64_t remotets)
 {
     lastSeen = machineTime();
-    ts.push_front((localts - remotets) / 2);
+    ts.push_front((localts - remotets));
     if (ts.size() > 120) {
         ts.pop_back();
     }
@@ -351,6 +351,7 @@ TimeSync::listener()
         processPkt(srcAddr.sin_addr.s_addr, pkt);
         inet_ntop(AF_INET, &srcAddr.sin_addr, srcAddrStr, INET_ADDRSTRLEN);
         //printf("Received from %s\n", srcAddrStr);
+        dump();
     }
 }
 
