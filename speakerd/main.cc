@@ -5,6 +5,7 @@
 #include "timesync.h"
 
 TimeSync *ts;
+int listen_to_commands();
 
 #define SECOND 1000000
 int
@@ -17,9 +18,8 @@ main(int argc, const char *argv[])
     printf("PRE SLEEP\n");
     sleep(5);
     printf("POST SLEEP\n");
-    while (1) {
-	ts->sleepUntil(2 * SECOND + ts->getTime());
-    }
+
+    listen_to_commands(); 
 
     ts->stop();
 }
