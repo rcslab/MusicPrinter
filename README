@@ -39,3 +39,42 @@ See printcap(5), lpd(8) for setup and lpr(1)/lpq(1),lprm(1) for usage.
 We need to create a new printer on the machine and point it to our lpr-music 
 program.  See the fields lp, sd, if, af, lf, and sh in the printcap file.
 
+We want a print filter driver that detects the file type using file(1) then 
+converts it either using sox, mplayer, or your favorite tool to an AAC MP4 ADTS 
+file format.  This format is designed for certain streaming applications and we 
+will send this file to lpr-speaker to stream to our speakers.
+
+Debugging
+=========
+
+- Make sure the right sound output is selected see /dev/sndstat and "sysctl 
+  w.snd.default_unit"
+
+Bonus Ideas
+===========
+
+1. Dynamic Synchronization of Audio and Clocks
+
+Right now we assume that clock skew throughout the song is fairly minimal and 
+we start two songs at approximately the same time but they could drift through 
+the course of streaming a long song or audio broadcast the speakers become out 
+of sync.  We can fix this by repeating values in the PCM linear output to 
+/dev/dsp to slow down playback or skipping values so all machines follow the 
+reference clock.
+
+2. Improve Clock Synchronization
+
+(a) Improve leader election through a more robust algorithm rather than just 
+choosing a machine that has been seen in the past five seconds and has the 
+lowest IP.
+
+(b) When we have N speakers we can actually achieve a very tight bound on time 
+by finding a window of time (min_t, max_t) that satisfies all clocks in the 
+network.  
+
+3. Distributed Dissemination of Songs
+
+Rather than having lpr-printer send the song to all machines we can use tornado 
+coding to broadcast the song to all machines.  We can reconstruct lost data 
+through the encoding.
+

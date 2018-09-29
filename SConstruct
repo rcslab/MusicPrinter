@@ -61,8 +61,8 @@ env.Append(CPPFLAGS = [ "-Wall", "-Wformat=2", "-Wextra", "-Wwrite-strings",
 env.Append(CFLAGS = [ "-Wmissing-prototypes", "-Wmissing-declarations",
                       "-Wshadow", "-Wbad-function-cast", "-Werror" ])
 env.Append(CXXFLAGS = [ "-Wno-unsupported-friend", "-Woverloaded-virtual",
-                        "-Wcast-qual", "-Wcast-align", "-Wconversion",
                         "-Weffc++", "-std=c++0x", "-Werror" ])
+                        #"-Wcast-qual", "-Wcast-align", "-Wconversion",
 
 if env["WITH_GPROF"]:
     env.Append(CPPFLAGS = [ "-pg" ])

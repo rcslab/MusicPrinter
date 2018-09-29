@@ -1,5 +1,7 @@
 
 Import('env')
 
+env.Append(LIBS = ["fdk-aac"])
+
 env.Program("speakerd", ["main.cc", "timesync.cc", "speaker.cc"])
 

@@ -42,7 +42,7 @@ using namespace std;
  * on.  You can also broadcast to 255.255.255.255 but machines with multiple 
  * NICs may not route the packet to the correct network.
  */
-static char bcIP[] = "192.168.1.255";
+static char bcIP[] = "129.97.75.255";
 
 #define TIMESYNC_PORT 8086
 

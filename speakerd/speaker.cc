@@ -84,10 +84,8 @@ DecodeAndPlay(char *buf, unsigned int len, int ossfd)
     HANDLE_AACDECODER decoder;
     AAC_DECODER_ERROR status;
     CStreamInfo *info;
-    unsigned int flags = 0;
 
     char *outbuf = new char[MAX_OUTPUT];
-    int outbufSize = MAX_OUTPUT;
 
     decoder = aacDecoder_Open(TT_MP4_ADTS, 1);
 
@@ -143,6 +141,7 @@ DecodeAndPlay(char *buf, unsigned int len, int ossfd)
     aacDecoder_Close(decoder);
 }
 
+/*
 int
 main(int argc, const char *argv[])
 {
@@ -187,4 +186,5 @@ main(int argc, const char *argv[])
 
     close(ossfd);
 }
+*/
 

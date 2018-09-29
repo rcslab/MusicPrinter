@@ -10,17 +10,10 @@
 #include <netinet/in.h>
 #include <netinet/tcp.h>
 
+#include "../speakerd/printer.h"
 #include "../speakerd/timesync.h"
 
 using namespace std;
-
-/*
- * XXX: Set to the local broadcast address of the network.  Run ifconfig to see 
- * the broadcast address for the local area network where all the machines run 
- * on.  You can also broadcast to 255.255.255.255 but machines with multiple 
- * NICs may not route the packet to the correct network.
- */
-static char bcIP[] = "192.168.1.255";
 
 #define TIMESYNC_PORT 8086
 
