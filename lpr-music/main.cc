@@ -211,7 +211,9 @@ cout<<"all connected"<<endl;
 		abort();
 	}
 
+	// Send everyone the song
 	for (int i = 0; i < TIMESYNC_MACHINES; i++){
+		int magic = 0xAA55AA55;
 		int cmd = 1;
 		int arg = ttlfilesize;
 
@@ -220,15 +222,84 @@ cout<<"all connected"<<endl;
 			continue;
 		}
 
-		write(speakers[i], (char *)&cmd, sizeof(int));
-		write(speakers[i], &arg, sizeof(int));
-
+		status = write(speakers[i], (char *)&magic, sizeof(int));
+		if (status < 0) {
+			perror("write cmd 1");
+			continue;
+		}
+		if (status != 4) {
+			printf("write cmd 1 wrong len\n");
+		}
+		status = write(speakers[i], (char *)&cmd, sizeof(int));
+		if (status < 0) {
+			perror("write cmd 1");
+			continue;
+		}
+		if (status != 4) {
+			printf("write cmd 1 wrong len\n");
+		}
+		status = write(speakers[i], (char *)&arg, sizeof(int));
+		if (status < 0) {
+			perror("write cmd 1");
+			continue;
+		}
+		if (status != 4) {
+			printf("write cmd 1 wrong len\n");
+		}
 
 		cout<<sizeof(buffer)<<endl;
-		write(speakers[i], buffer, arg); // or use ttlfilesize instead
-
+		status = write(speakers[i], buffer, arg); // or use ttlfilesize instead
+		if (status < 0) {
+			perror("write cmd 1");
+			continue;
+		}
+		if (status != arg) {
+			printf("song len wrong?\n");
+		}
+		printf("song done\n");
 	}
 
-	printf("reached the end of the code");
+	int64_t ts;
+
+	// Read the reference clock
+	{
+		int magic = 0xAA55AA55;
+		int cmd = 2;
+		int arg = 0;
+
+		write(speakers[0], (char *)&magic, sizeof(int));
+		write(speakers[0], (char *)&cmd, sizeof(int));
+		write(speakers[0], (char *)&arg, sizeof(int));
+
+		status = read(speakers[0], (char *)&ts, sizeof(int64_t));
+		if (status < 0) {
+			perror("reference clock read");
+			return 1;
+		}
+	}
+
+	// Add 5 seconds to reference clock
+	ts += 5*1000*1000;
+
+	// Tell everyone the start time
+	cout << "playing.." << endl;
+	for (int i = 0; i < TIMESYNC_MACHINES; i++){
+		int magic = 0xAA55AA55;
+		int cmd = 3;
+		int arg = 0;
+
+		if (speakers[i] < 0){
+			continue;
+		}
+
+		write(speakers[i], (char *)&magic, sizeof(int));
+		write(speakers[i], (char *)&cmd, sizeof(int));
+		write(speakers[i], &arg, sizeof(int));
+		write(speakers[i], &ts, sizeof(int64_t));
+
+		close(speakers[i]);
+	}
+
+	cout << "Done." << endl;
 }
 
