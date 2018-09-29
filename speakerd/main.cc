@@ -5,7 +5,7 @@
 #include "timesync.h"
 
 TimeSync *ts;
-int listen_to_commands();
+int listen_to_commands(TimeSync *ts);
 
 #define SECOND 1000000
 int
@@ -16,7 +16,7 @@ main(int argc, const char *argv[])
     ts = new TimeSync();
     ts->start();
 
-    listen_to_commands(); 
+    listen_to_commands(ts); 
 
     ts->stop();
 }

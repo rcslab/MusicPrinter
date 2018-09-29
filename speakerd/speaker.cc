@@ -16,6 +16,7 @@
 
 #include <fdk-aac/aacdecoder_lib.h>
 
+#include "timesync.h"
 /*
  * Simple music player that decodes AAC files and plays them through Open Sound 
  * System (OSS).
@@ -225,7 +226,7 @@ load_song(int client, int msglen)
  }
 
 int
-listen_to_commands()
+listen_to_commands(TimeSync *ts)
 {
     int sock;
     int status;
@@ -325,14 +326,13 @@ listen_to_commands()
 				break;
 
 			case 2:
-				// Read current time
-				timestamp = 0;
+				timestamp = ts->getTime();
 				write(client, &timestamp, sizeof(timestamp));
 
 				break;
 			case 3:
 				read(client, &timestamp, sizeof(timestamp));
-				// Wait until the timestamp time
+				ts->sleepUntil(timestamp);
 
     				ossfd = OpenAndConfigureOSS();
 				DecodeAndPlay(buf, buflen, ossfd);
