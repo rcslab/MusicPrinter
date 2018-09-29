@@ -183,6 +183,7 @@ cout<<"discovered."<<endl;
         addr.sin_addr.s_addr = pkt.machines[i].ip;
         addr.sin_port = htons(MUSICPRINTER_PORT);
 
+	printf("Connecting %x\n", addr.sin_addr.s_addr);
         status = connect(speakers[i], (struct sockaddr *)&addr, sizeof(addr));
         if (status < 0) {
             close(speakers[i]);
@@ -190,25 +191,6 @@ cout<<"discovered."<<endl;
         }
     }
 cout<<"all connected"<<endl;
-
-    /*
-	struct sockaddr_in addr;
-	memset(&addr, 0, sizeof(addr));
-	addr.sin_family = AF_INET;
-	inet_pton(AF_INET, "129.97.75.37", &addr.sin_addr);
-	addr.sin_port = htons(MUSICPRINTER_PORT);
-
-	for (int i = 0; i < TIMESYNC_MACHINES; i++){
-		speakers[i] = -1;
-	}
-
-	speakers[0] = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-
-	status = connect(speakers[0], (struct sockaddr *)&addr, sizeof(addr));
-	if (status < 0) {
-		perror("connect");
-		abort();
-	}*/
 
 	// Send everyone the song
 	for (int i = 0; i < TIMESYNC_MACHINES; i++){
