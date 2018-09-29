@@ -1,10 +1,12 @@
 
+#include <stdio.h>
 #include <unistd.h>
 
 #include "timesync.h"
 
 TimeSync *ts;
 
+#define SECOND 1000000
 int
 main(int argc, const char *argv[])
 {
@@ -12,9 +14,11 @@ main(int argc, const char *argv[])
 
     ts = new TimeSync();
     ts->start();
-
+    printf("PRE SLEEP\n");
+    sleep(5);
+    printf("POST SLEEP\n");
     while (1) {
-        sleep(1);
+	ts->sleepUntil(2 * SECOND + ts->getTime());
     }
 
     ts->stop();
