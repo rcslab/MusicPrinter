@@ -82,10 +82,17 @@ TSMachine::dump()
 void
 TSMachine::addSample(int64_t localts, int64_t remotets)
 {
+    lastSeen = machineTime();
     ts.push_front(localts - remotets);
     if (ts.size() > 120) {
         ts.pop_back();
     }
+}
+
+bool
+TSMachine::isLive() 
+{
+    return (machineTime() - lastSeen) < (5 * 1000000);
 }
 
 uint32_t
@@ -142,12 +149,26 @@ TimeSync::stop()
 int64_t
 TimeSync::getTime()
 {
-    return 0;
+    auto min = UINT32_MAX;
+    TSMachine min_machine;
+    for (auto &&m : machines) {
+	uint32_t curr = m.second.getIP();
+	if(curr < min) {
+	    min = curr;
+	    min_machine = m.second;
+	}
+    }
+
+    return machineTime() - min_machine.getTSDelta();
 }
 
 void
 TimeSync::sleepUntil(int64_t ts)
 {
+    auto time = ts - getTime();
+    if(time > 0) {
+    	usleep(time);
+    }
 }
 
 void
@@ -217,8 +238,8 @@ TimeSync::announcer()
             perror("sendto");
         }
 
-        cout << "Announcement Sent" << endl;
-        dump();
+        //cout << "Announcement Sent" << endl;
+        //dump();
 
         sleep(1);
     }
@@ -291,6 +312,7 @@ TimeSync::listener()
     }
 
     memset(&addr, 0, sizeof(addr));
+
     addr.sin_family = AF_INET;
     addr.sin_addr.s_addr = htonl(INADDR_ANY);
     addr.sin_port = htons(TIMESYNC_PORT);
@@ -317,14 +339,14 @@ TimeSync::listener()
             continue;
         }
         if (bufLen != sizeof(pkt)) {
-            cout << "Packet recieved with the wrong size!" << endl;
+            cout << "Packet with the wrong size!" << endl;
             continue;
         }
 
         // Parse Announcement
         processPkt(srcAddr.sin_addr.s_addr, pkt);
         inet_ntop(AF_INET, &srcAddr.sin_addr, srcAddrStr, INET_ADDRSTRLEN);
-        printf("Received from %s\n", srcAddrStr);
+        //printf("Received from %s\n", srcAddrStr);
     }
 }
 

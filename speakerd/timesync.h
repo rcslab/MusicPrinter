@@ -32,11 +32,13 @@ public:
     ~TSMachine();
     void dump();
     void addSample(int64_t localts, int64_t remotets);
+    bool isLive();
     uint32_t getIP();
     int64_t getTSDelta();
     int64_t tdpeer; // Minimum Time Delta from Peer
 private:
     uint32_t ip;
+    int64_t lastSeen;
     std::list<int64_t> ts; // Time Deltas
 };
 
