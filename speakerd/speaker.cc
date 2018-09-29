@@ -192,20 +192,46 @@ main(int argc, const char *argv[])
 
 #define BUF_LEN (10 * 1024 * 1024)
 char buf[BUF_LEN];
+int buflen;
+
+
+int 
+load_song(int client, int msglen)
+{
+	int offset = 0;
+	int status; 
+	
+	while (offset < msglen) {
+		status = read(client, buf + offset, msglen - offset);
+		if (status < 0) {
+			perror("read");
+			printf("Intermediate offset:%d\n", offset);
+			return 1;
+		}
+		offset += status;
+	}
+	printf("Offset is: %d\n", offset);
+
+	printf("Read data. Status %d\n", status);
+	if (offset != msglen) {
+		printf("We didn't read enough bytes!\n");
+		return 1;
+	}
+
+	buflen = msglen;
+	printf("Final offset:%d\n", offset);
+
+	return 0;
+ }
 
 int
-main(int argc, const char *argv[])
+listen_to_commands()
 {
-    int fd;
     int sock;
     int status;
-    struct stat sb;
+    int ossfd;
     int reuseaddr = 1;
-
-    if (argc != 1) {
-        printf("Usage: %s \n", argv[0]);
-        return 1;
-    }
+    int64_t timestamp = 0;
 
 
     sock = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP);
@@ -228,7 +254,7 @@ main(int argc, const char *argv[])
         abort();
     }
 
-    struct sockaddr_in server_addr = {0};
+    struct sockaddr_in server_addr;
     server_addr.sin_family = AF_INET;
     server_addr.sin_addr.s_addr = htonl(INADDR_ANY);
 #define PORT (8085)
@@ -260,45 +286,66 @@ main(int argc, const char *argv[])
 	}
 	printf("Accepted connection.\n");
 
-	int cmd;
-	status = read(client, &cmd, sizeof(int));
-	if (status < 0) {
-		perror("recv");
-		return 1;
-	}
-
-	int msglen;
-	status = read(client, &msglen, sizeof(int));
-	if (status < 0) {
-		perror("recv");
-		return 1;
-	}
-
-	printf("Read cmd %d, msglen %d\n", cmd, msglen);
-
-	int offset = 0;
-	while (offset < msglen) {
-		status = read(client, buf + offset, msglen - offset);
+	for (;;) {
+		unsigned int poison;
+		status = read(client, &poison, sizeof(poison));
 		if (status < 0) {
 			perror("read");
 			return 1;
 		}
-		offset += status;
+		if (poison != 0xaa55aa55) {
+			printf("Error: Poison value received is %x\n", poison);
+
+		}
+
+		int cmd;
+		status = read(client, &cmd, sizeof(cmd));
+		if (status < 0) {
+			perror("read");
+			return 1;
+		}
+		if (status == 0) {
+			printf("Connection closed, breaking out...\n");
+			break;
+		}
+
+		int arg;
+		status = read(client, &arg, sizeof(arg));
+		if (status < 0) {
+			perror("read");
+			return 1;
+		}
+
+
+		printf("Read cmd %d, arg %d\n", cmd, arg);
+		switch (cmd) {
+			case 1:
+				status = load_song(client, arg);
+
+				break;
+
+			case 2:
+				// Read current time
+				timestamp = 0;
+				write(client, &timestamp, sizeof(timestamp));
+
+				break;
+			case 3:
+				read(client, &timestamp, sizeof(timestamp));
+				// Wait until the timestamp time
+
+    				ossfd = OpenAndConfigureOSS();
+				DecodeAndPlay(buf, buflen, ossfd);
+				printf("DecodeAndPlay: len %d\n", arg);
+				close(ossfd);
+				break;
+
+			default:
+				printf("Invalid command %d\n", cmd);
+
+		}
+
 	}
-	printf("Offset is: %d\n", offset);
-
-	printf("Read data. Status %d\n", status);
-	if (offset != msglen) {
-		printf("We didn't read enough bytes!\n");
-		return 1;
-	}
-
-       int ossfd = OpenAndConfigureOSS();
-    	DecodeAndPlay(buf, msglen, ossfd);
-    	close(ossfd);
-
-    	printf("DecodeAndPlay: len %d\n", msglen);
     }
-
 }
 
