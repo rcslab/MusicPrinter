@@ -227,6 +227,10 @@ TimeSync::announcer()
 
         pkt.magic = TIMESYNC_MAGIC;
         pkt.ts = machineTime();
+	for (int i = 0; i < 32; i++) {
+	    pkt.machines[i].ip = 0;
+	    pkt.machines[i].td = 0;
+	}
         for (auto &&m : machines) {
             pkt.machines[i].ip = m.first;
             pkt.machines[i].td = m.second.getTSDelta();
