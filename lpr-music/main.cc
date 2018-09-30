@@ -186,6 +186,7 @@ cout<<"discovered."<<endl;
 	printf("Connecting %x\n", addr.sin_addr.s_addr);
         status = connect(speakers[i], (struct sockaddr *)&addr, sizeof(addr));
         if (status < 0) {
+	    perror("connect");
             close(speakers[i]);
             speakers[i] = -1;
         }
