@@ -16,8 +16,6 @@
 
 using namespace std;
 
-#define TIMESYNC_PORT 8086
-
 /*
  * Discover a speaker and return the IP address as a string.
  */
@@ -111,57 +109,55 @@ int
 main(int argc, const char *argv[])
 {
 
-	int fd;
-	int status;
-	struct stat sb;
+    int fd;
+    int status;
+    struct stat sb;
 
-	if (argc != 2){
-		printf("Missing arguments");
-		return 1;
-	}
+    if (argc != 2){
+        printf("Missing arguments");
+        return 1;
+    }
 
-	if (lstat(argv[1],&sb) < 0){
-		perror("lstat error");
-		return 1;
-	}
+    if (lstat(argv[1],&sb) < 0){
+        perror("lstat error");
+        return 1;
+    }
 
-	int len = sb.st_size;
-	char *buffer = new char[len];
-	
-	fd = open(argv[1], O_RDONLY);
-	if (fd < 0){
-		perror("read error");
-		return 1;
-	}
+    int len = sb.st_size;
+    char *buffer = new char[len];
+    
+    fd = open(argv[1], O_RDONLY);
+    if (fd < 0){
+        perror("read error");
+        return 1;
+    }
 
-	int ttlfilesize = len * sizeof(char);
+    int ttlfilesize = len * sizeof(char);
 
-	int ttlbytesread = 0;
+    int ttlbytesread = 0;
 
-	do{
-		int charstoread = ttlfilesize - ttlbytesread;
-		
-		status = read(fd, buffer+ttlbytesread, charstoread);
-		if (status == 0){
-			printf("EoF reached");
-		}
-		if (status < 0){
-			perror("read error");
-			continue;
-		}
+    do{
+        int charstoread = ttlfilesize - ttlbytesread;
+            
+        status = read(fd, buffer+ttlbytesread, charstoread);
+        if (status == 0){
+            printf("EoF reached");
+        }
+        if (status < 0){
+            perror("read error");
+            continue;
+        }
 
-		ttlbytesread += status;
-
-		
-	}while (ttlbytesread < ttlfilesize);
-	
-	cout<<"file buffered "<<ttlbytesread<<endl;	
+        ttlbytesread += status;
+    }while (ttlbytesread < ttlfilesize);
+    
+    printf("%d bytes buffered\n", ttlbytesread);
 
     int speakers[TIMESYNC_MACHINES];
     TSPkt pkt;
 
     pkt = Discover_Speaker();
-cout<<"discovered."<<endl;
+    printf("Discovered\n");
     // Read stdin and forward to all speakers
     for (int i = 0; i < TIMESYNC_MACHINES; i++) {
         int status;
@@ -183,107 +179,105 @@ cout<<"discovered."<<endl;
         addr.sin_addr.s_addr = pkt.machines[i].ip;
         addr.sin_port = htons(MUSICPRINTER_PORT);
 
-	printf("Connecting %x\n", addr.sin_addr.s_addr);
+        printf("Connecting %x\n", addr.sin_addr.s_addr);
         status = connect(speakers[i], (struct sockaddr *)&addr, sizeof(addr));
         if (status < 0) {
-	    perror("connect");
+            perror("connect");
             close(speakers[i]);
             speakers[i] = -1;
         }
     }
-cout<<"all connected"<<endl;
+    printf("Connected to all speakers\n");
 
-	// Send everyone the song
-	for (int i = 0; i < TIMESYNC_MACHINES; i++){
-		int magic = 0xAA55AA55;
-		int cmd = 1;
-		int arg = ttlfilesize;
+    // Send everyone the song
+    for (int i = 0; i < TIMESYNC_MACHINES; i++){
+        int magic = 0xAA55AA55;
+        int cmd = MUSICPRINTER_LOAD;
+        int arg = ttlfilesize;
 
-		cout<<"syncing.."<<endl;
-		if (speakers[i] < 0){
-			continue;
-		}
+        printf("Syncing..\n");
+        if (speakers[i] < 0){
+            continue;
+        }
 
-		status = write(speakers[i], (char *)&magic, sizeof(int));
-		if (status < 0) {
-			perror("write cmd 1");
-			continue;
-		}
-		if (status != 4) {
-			printf("write cmd 1 wrong len\n");
-		}
-		status = write(speakers[i], (char *)&cmd, sizeof(int));
-		if (status < 0) {
-			perror("write cmd 1");
-			continue;
-		}
-		if (status != 4) {
-			printf("write cmd 1 wrong len\n");
-		}
-		status = write(speakers[i], (char *)&arg, sizeof(int));
-		if (status < 0) {
-			perror("write cmd 1");
-			continue;
-		}
-		if (status != 4) {
-			printf("write cmd 1 wrong len\n");
-		}
+        status = write(speakers[i], (char *)&magic, sizeof(int));
+        if (status < 0) {
+            perror("write cmd 1");
+            continue;
+        }
+        if (status != 4) {
+            printf("write cmd 1 wrong len\n");
+        }
+        status = write(speakers[i], (char *)&cmd, sizeof(int));
+        if (status < 0) {
+            perror("write cmd 1");
+            continue;
+        }
+        if (status != 4) {
+            printf("write cmd 1 wrong len\n");
+        }
+        status = write(speakers[i], (char *)&arg, sizeof(int));
+        if (status < 0) {
+            perror("write cmd 1");
+            continue;
+        }
+        if (status != 4) {
+            printf("write cmd 1 wrong len\n");
+        }
 
-		cout<<sizeof(buffer)<<endl;
-		status = write(speakers[i], buffer, arg); // or use ttlfilesize instead
-		if (status < 0) {
-			perror("write cmd 1");
-			continue;
-		}
-		if (status != arg) {
-			printf("song len wrong?\n");
-		}
-		printf("song done\n");
-	}
+        status = write(speakers[i], buffer, arg); // or use ttlfilesize instead
+        if (status < 0) {
+            perror("write cmd 1");
+            continue;
+        }
+        if (status != arg) {
+            printf("song len wrong?\n");
+        }
+        printf("song done\n");
+    }
 
-	int64_t ts;
+        int64_t ts;
 
-	// Read the reference clock
-	{
-		int magic = 0xAA55AA55;
-		int cmd = 2;
-		int arg = 0;
+    // Read the reference clock
+    {
+        int magic = 0xAA55AA55;
+        int cmd = MUSICPRINTER_GETTIME;
+        int arg = 0;
 
-		write(speakers[0], (char *)&magic, sizeof(int));
-		write(speakers[0], (char *)&cmd, sizeof(int));
-		write(speakers[0], (char *)&arg, sizeof(int));
+        write(speakers[0], (char *)&magic, sizeof(int));
+        write(speakers[0], (char *)&cmd, sizeof(int));
+        write(speakers[0], (char *)&arg, sizeof(int));
 
-		status = read(speakers[0], (char *)&ts, sizeof(int64_t));
-		if (status < 0) {
-			perror("reference clock read");
-			return 1;
-		}
-	}
+        status = read(speakers[0], (char *)&ts, sizeof(int64_t));
+        if (status < 0) {
+            perror("reference clock read");
+            return 1;
+        }
+    }
 
-	// Add 5 seconds to reference clock
-	ts += 5*1000*1000;
+    // Add 5 seconds to reference clock
+    ts += 5*1000*1000;
 
-	// Tell everyone the start time
-	cout << "playing.." << endl;
-	for (int i = 0; i < TIMESYNC_MACHINES; i++){
-		int magic = 0xAA55AA55;
-		int cmd = 3;
-		int arg = 0;
+    // Tell everyone the start time
+    cout << "playing.." << endl;
+    for (int i = 0; i < TIMESYNC_MACHINES; i++){
+        int magic = 0xAA55AA55;
+        int cmd = MUSICPRINTER_PLAY;
+        int arg = 0;
 
-		if (speakers[i] < 0){
-			continue;
-		}
+        if (speakers[i] < 0){
+            continue;
+        }
 
-		write(speakers[i], (char *)&magic, sizeof(int));
-		write(speakers[i], (char *)&cmd, sizeof(int));
-		write(speakers[i], &arg, sizeof(int));
-		write(speakers[i], &ts, sizeof(int64_t));
+        write(speakers[i], (char *)&magic, sizeof(int));
+        write(speakers[i], (char *)&cmd, sizeof(int));
+        write(speakers[i], &arg, sizeof(int));
+        write(speakers[i], &ts, sizeof(int64_t));
 
-		close(speakers[i]);
-	}
+        close(speakers[i]);
+    }
 
-	printf("Starting @ %ld\n", ts);
-
-	cout << "Done." << endl;
+    printf("Starting @ %ld\n", ts);
+    printf("Done.\n");
 }
 
