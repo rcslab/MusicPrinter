@@ -1,0 +1,7 @@
+music:\
+    :lp=/dev/null:\
+    :sh:\
+    :mx#0:\
+    :sd=/tmp/spool:\
+    :if=$HOME/MusicPrinter/filter/play:\
+    :lf=/var/log/music.err:

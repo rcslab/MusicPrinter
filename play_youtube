@@ -1,0 +1,6 @@
+#!/bin/sh
+
+rm -f /tmp/youtube.mp3
+youtube-dl --extract-audio --audio-format mp3 $1 --output /tmp/youtube.mp3
+lprm -Pmusic
+lpr -Pmusic /tmp/youtube.mp3

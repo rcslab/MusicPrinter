@@ -1,0 +1,4 @@
+#!/bin/sh
+
+/usr/local/bin/ffmpeg  -codec:a aac -y /tmp/music.aac -i - 
+$HOME/MusicPrinter/build/lpr-music/lpr-printer /tmp/music.aac
