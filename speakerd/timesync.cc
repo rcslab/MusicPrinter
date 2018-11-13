@@ -152,11 +152,11 @@ TimeSync::getTime()
     auto min = UINT32_MAX;
     TSMachine min_machine;
     for (auto &&m : machines) {
-	uint32_t curr = m.second.getIP();
-	if(curr < min) {
-	    min = curr;
-	    min_machine = m.second;
-	}
+        uint32_t curr = m.second.getIP();
+        if(curr < min) {
+            min = curr;
+            min_machine = m.second;
+        }
     }
 
     return machineTime() - min_machine.getTSDelta();
@@ -167,7 +167,7 @@ TimeSync::sleepUntil(int64_t ts)
 {
     auto time = ts - getTime();
     if(time > 0) {
-    	usleep(time);
+        usleep(time);
     }
 }
 
@@ -227,10 +227,10 @@ TimeSync::announcer()
 
         pkt.magic = TIMESYNC_MAGIC;
         pkt.ts = machineTime();
-	for (i = 0; i < 32; i++) {
-	    pkt.machines[i].ip = 0;
-	    pkt.machines[i].td = 0;
-	}
+        for (i = 0; i < 32; i++) {
+            pkt.machines[i].ip = 0;
+            pkt.machines[i].td = 0;
+        }
         i = 0;
         for (auto &&m : machines) {
             pkt.machines[i].ip = m.first;

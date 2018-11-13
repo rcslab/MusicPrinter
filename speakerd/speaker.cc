@@ -16,6 +16,7 @@
 
 #include <fdk-aac/aacdecoder_lib.h>
 
+#include "printer.h"
 #include "timesync.h"
 /*
  * Simple music player that decodes AAC files and plays them through Open Sound 
@@ -320,17 +321,17 @@ listen_to_commands(TimeSync *ts)
 
 		printf("Read cmd %d, arg %d\n", cmd, arg);
 		switch (cmd) {
-			case 1:
+			case MUSICPRINTER_LOAD:
 				status = load_song(client, arg);
 
 				break;
 
-			case 2:
+			case MUSICPRINTER_GETTIME:
 				timestamp = ts->getTime();
 				write(client, &timestamp, sizeof(timestamp));
 
 				break;
-			case 3:
+			case MUSICPRINTER_PLAY:
 				read(client, &timestamp, sizeof(timestamp));
 				ts->sleepUntil(timestamp);
 

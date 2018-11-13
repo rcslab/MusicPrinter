@@ -44,6 +44,12 @@ converts it either using sox, mplayer, or your favorite tool to an AAC MP4 ADTS
 file format.  This format is designed for certain streaming applications and we 
 will send this file to lpr-speaker to stream to our speakers.
 
+Supported Platforms
+===================
+
+Currently this has only been tested on FreeBSD 11.  Simple patches should make 
+this portable to other platforms.
+
 Debugging
 =========
 
